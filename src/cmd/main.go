@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"../pkg/utils"
 )
 
 type config struct {
