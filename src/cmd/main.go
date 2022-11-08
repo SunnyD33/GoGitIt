@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"../pkg/utils"
+	"GoGitIt/pkg/utils"
 )
 
 type config struct {

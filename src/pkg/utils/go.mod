@@ -1,4 +1,4 @@
-module github.com/SunnyD33/go-git-it
+module GoGitIt/pkg/utils
 
 go 1.19
 
