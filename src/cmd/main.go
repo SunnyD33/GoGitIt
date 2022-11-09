@@ -15,6 +15,10 @@ type config struct {
 	isAuthorized  bool
 }
 
+func (conf *config) updateAuthState(state bool) {
+	conf.isAuthorized = state
+}
+
 var helpText = "Help text should print"
 
 func printHelpText(w io.Writer) {
@@ -25,7 +29,7 @@ func printHelpText(w io.Writer) {
 func parseArgs(args []string) (config, error) {
 	c := config{}
 
-	if len(args) != 1 {
+	if len(args) < 1 {
 		return c, errors.New("invalid number of arguments")
 	}
 
@@ -37,24 +41,35 @@ func parseArgs(args []string) (config, error) {
 
 	//Authorize user
 	if args[0] == "-a" {
-		fmt.Println("Logic to be coded..")
+		fmt.Println("Checking for token...")
+
+		//A is variable from auth.go to give access to the Auth struct
+		if Auth.A.AuthToken == "" {
+			authStateCheker := Auth.SetAuthState()
+			if authStateCheker == "" {
+				fmt.Println("Unable to find token in your .env file. Please confirm that the GH_TOKEN variable is not empty.")
+			} else {
+				fmt.Println("Authorization successful!")
+				c.updateAuthState(true)
+			}
+		} else {
+			fmt.Println("Currently authorized. You can use 'ggi -s' or 'ggi -status' to check yur authorization status")
+		}
+		return c, nil
 	}
 
 	//Checks that current authorization status of the current user
 	if args[0] == "--status" || args[0] == "-s" {
-		Auth_Token := Utils.GetEnvWithKey("GH_TOKEN")
 
-		if Auth_Token == "" {
-			c.isAuthorized = false
-		} else {
-			c.isAuthorized = true
-		}
+		c.isAuthorized = Auth.CheckAuthState()
 
 		if c.isAuthorized {
 			Auth.PrintAuthorizedText()
 		} else {
 			Auth.PrintUnauthorizedText()
 		}
+
+		return c, nil
 	}
 
 	return c, nil

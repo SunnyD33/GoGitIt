@@ -1,4 +1,4 @@
-module GoGitIt/cmd
+module GoGitIt/ggi
 
 go 1.19
 
