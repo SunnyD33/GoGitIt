@@ -31,7 +31,7 @@ func saveConfig(c config, filename string) error {
 	return os.WriteFile(filename, bytes, 0644)
 }
 
-// Function to load th config struct from a yaml file and check if
+// Function to load the config struct from a yaml file and check if
 // authorized is set to true and that there is a token in the .env file
 func loadConfig(filename string) (config, error) {
 	bytes, err := os.ReadFile(filename)
@@ -48,6 +48,8 @@ func loadConfig(filename string) (config, error) {
 	return c, nil
 }
 
+//Function for checking the users auth state when certain commands are
+//passed in to be parsed
 func checkAuthStatus() config {
 	tokenCheck := Auth.CheckAuthToken()
 	homeDir, _ := os.UserHomeDir()
@@ -64,6 +66,7 @@ func checkAuthStatus() config {
 	return c
 }
 
+//To be re-worked and potentially moved into it's own go file
 func printHelpText() {
 	helpText := "Help text should print"
 	fmt.Println(helpText)
