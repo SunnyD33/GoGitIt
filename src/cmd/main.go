@@ -130,13 +130,17 @@ func parseArgs(args []string) (config, error) {
 }
 
 func runCmd(r io.Reader, w io.Writer, c config) error {
-	//TODO: To remove on final build
+	//TODO: To use for some commands that will require reading of inputs
 	fmt.Println("Command ran successfully") //Here to know that runCmd ran as expected
 	return nil
 }
 
 func main() {
-	Utils.LoadEnv()
+	loadErr := Utils.LoadEnv()
+	if loadErr != nil {
+		fmt.Println(loadErr)
+		return
+	}
 
 	c, err := parseArgs(os.Args[1:])
 	if err != nil {
