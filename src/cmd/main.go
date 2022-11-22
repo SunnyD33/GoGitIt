@@ -12,17 +12,22 @@ import (
 	Utils "GoGitIt/pkg/utils"
 )
 
-type config struct {
-	IsAuthorized bool `yaml:"authorized"`
+type Config struct {
+	IsAuthorized bool   `yaml:"authorized"`
+	EnvLocation  string `yaml:"envLocation"`
 }
 
-func (conf *config) updateAuthState(state bool) {
+func (conf *Config) updateAuthState(state bool) {
 	conf.IsAuthorized = state
+}
+
+func (conf *Config) updateEnvLocation(filepath string) {
+	conf.EnvLocation = filepath
 }
 
 // Function to save the config struct to a yaml file that will be housed
 // in the $HOME directory
-func saveConfig(c config, filename string) error {
+func saveConfig(c Config, filename string) error {
 	bytes, err := yaml.Marshal(c)
 	if err != nil {
 		return err
@@ -33,30 +38,43 @@ func saveConfig(c config, filename string) error {
 
 // Function to load the config struct from a yaml file and check if
 // authorized is set to true and that there is a token in the .env file
-func loadConfig(filename string) (config, error) {
+func loadConfig(filename string) (Config, error) {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
-		return config{}, err
+		return Config{}, err
 	}
 
-	var c config
+	var c Config
 	err = yaml.Unmarshal(bytes, &c)
 	if err != nil {
-		return config{}, err
+		return Config{}, err
 	}
 
 	return c, nil
 }
 
-//Function for checking the users auth state when certain commands are
-//passed in to be parsed
-func checkAuthStatus() config {
+// Function to check if the env filepath is set
+func checkEnvLocation() string {
+	homeDir, _ := os.UserHomeDir()
+	result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+
+	if err != nil {
+		fmt.Println("Error opening yaml config file. Run 'touch .ggiconfig.yaml' in your home directory")
+		os.Exit(1)
+	}
+
+	return result.EnvLocation
+}
+
+// Function for checking the users auth state when certain commands are
+// passed in to be parsed
+func checkAuthStatus() Config {
 	tokenCheck := Auth.CheckAuthToken()
 	homeDir, _ := os.UserHomeDir()
 	c, err := loadConfig(homeDir + "/.ggiconfig.yaml")
 
 	if err != nil {
-		c.IsAuthorized = false
+		fmt.Println(err)
 	} else if err == nil && tokenCheck {
 		c.IsAuthorized = true
 	} else {
@@ -66,15 +84,40 @@ func checkAuthStatus() config {
 	return c
 }
 
-//To be re-worked and potentially moved into it's own go file
+// To be re-worked and potentially moved into it's own go file
 func printHelpText() {
 	helpText := "Help text should print"
 	fmt.Println(helpText)
 	fmt.Println("")
 }
 
-func parseArgs(args []string) (config, error) {
-	c := config{}
+func parseArgs(args []string) (Config, error) {
+	c := Config{}
+
+	//Check for .env file when commands are run
+	loadErr := Utils.LoadEnv(checkEnvLocation())
+
+	if loadErr != nil {
+		fmt.Println(loadErr)
+		homeDir, err := os.UserHomeDir()
+
+		if err != nil {
+			return c, errors.New("could not find user home directory")
+		}
+		envFileLocation, _ := Utils.SetEnv(os.Stdin, os.Stdout)
+
+		result, _ := loadConfig(homeDir + "/.ggiconfig.yaml")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		result.updateEnvLocation(envFileLocation)
+		result.updateAuthState(false)
+
+		saveConfig(result, homeDir+"/.ggiconfig.yaml")
+
+		return c, nil
+	}
 
 	if len(args) < 1 {
 		return c, errors.New("invalid number of arguments")
@@ -126,26 +169,57 @@ func parseArgs(args []string) (config, error) {
 		}
 	}
 
+	//Allow user to set a custom .env file location
+	if args[0] == "--setenv" {
+		homeDir, err := os.UserHomeDir()
+
+		if err != nil {
+			return c, errors.New("could not find user home directory")
+		}
+		envFileLocation, err := Utils.SetEnv(os.Stdin, os.Stdout)
+
+		if err != nil {
+			return c, err
+		}
+
+		result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+		if err != nil {
+			return result, err
+		}
+
+		c.updateEnvLocation(envFileLocation)
+		c.updateAuthState(result.IsAuthorized)
+		saveConfig(c, homeDir+"/.ggiconfig.yaml")
+	}
+
 	return c, nil
 }
 
-func runCmd(r io.Reader, w io.Writer, c config) error {
+func runCmd(r io.Reader, w io.Writer, c Config) error {
 	//TODO: To use for some commands that will require reading of inputs
 	fmt.Println("Command ran successfully") //Here to know that runCmd ran as expected
 	return nil
 }
 
 func main() {
-	loadErr := Utils.LoadEnv()
-	if loadErr != nil {
-		fmt.Println(loadErr)
-		return
+	homeDir, _ := os.UserHomeDir()
+	/* 	setCmd := os.Args[1]
+	   	if setCmd == "--setenv" {
+	   		parseArgs(os.Args[1:])
+	   		os.Exit(1)
+	   	} */
+	result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+
+	if err != nil {
+		fmt.Println("Error opening yaml config file. Run 'touch .ggiconfig.yaml' in your home directory")
+		os.Exit(1)
 	}
+
+	Utils.LoadEnv(result.EnvLocation)
 
 	c, err := parseArgs(os.Args[1:])
 	if err != nil {
 		fmt.Fprintln(os.Stdout, err)
-		printHelpText()
 		os.Exit(1)
 	}
 
