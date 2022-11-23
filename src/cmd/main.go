@@ -71,17 +71,21 @@ func checkEnvLocation() string {
 func checkAuthStatus() Config {
 	tokenCheck := Auth.CheckAuthToken()
 	homeDir, _ := os.UserHomeDir()
-	c, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+	result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
 
 	if err != nil {
 		fmt.Println(err)
 	} else if err == nil && tokenCheck {
-		c.IsAuthorized = true
+		result.updateAuthState(true)
+		result.updateEnvLocation(result.EnvLocation)
+		saveConfig(result, homeDir+"/.ggiconfig.yaml")
 	} else {
-		c.IsAuthorized = false
+		result.updateAuthState(false)
+		result.updateEnvLocation(result.EnvLocation)
+		saveConfig(result, homeDir+"/.ggiconfig.yaml")
 	}
 
-	return c
+	return result
 }
 
 // To be re-worked and potentially moved into it's own go file
