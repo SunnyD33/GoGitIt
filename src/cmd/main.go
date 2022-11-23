@@ -135,28 +135,24 @@ func parseArgs(args []string) (Config, error) {
 
 	//Authorize user
 	if args[0] == "-a" {
-		authStatus := checkAuthStatus()
 		fmt.Println("Checking for token...")
+		authToken := Auth.CheckAuthToken()
 
-		if authStatus.IsAuthorized {
-			fmt.Println("Currently authorized. You can use 'ggi -s' or 'ggi -status' to check your authorization status")
-		} else if Auth.AuthToken == "" {
-			authTokenCheker := Auth.GetAuthToken()
-			if authTokenCheker == "" {
-				fmt.Println("Authorization failed")
-				fmt.Println("Unable to find token in your .env file. Please confirm that the GH_TOKEN variable is not empty.")
-			} else {
-				homeDir, err := os.UserHomeDir()
-				if err != nil {
-					return c, errors.New("could not find user home directory")
-				}
-
-				c.updateAuthState(true)
-				saveConfig(c, homeDir+"/.ggiconfig.yaml")
-				fmt.Println("Authorization successful!")
-			}
+		if !authToken {
+			fmt.Println("Authorization failed")
+			fmt.Println("Unable to find token in your .env file. Please confirm that the GH_TOKEN variable is not empty.")
 		} else {
-			fmt.Println("yaml file was not created and/or .env file does not exist or a token is not set.")
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return c, errors.New("could not find user home directory")
+			}
+
+			result, _ := loadConfig(homeDir + "/.ggiconfig.yaml")
+
+			c.updateAuthState(true)
+			c.updateEnvLocation(result.EnvLocation)
+			saveConfig(c, homeDir+"/.ggiconfig.yaml")
+			fmt.Println("Authorization successful!")
 		}
 
 		return c, nil
