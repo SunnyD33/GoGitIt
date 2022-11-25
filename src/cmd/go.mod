@@ -6,8 +6,11 @@ replace GoGitIt/pkg/utils => ../pkg/utils
 
 replace GoGitIt/internal/auth => ../internal/auth
 
+replace GoGitIt/internal/repos => ../internal/repos
+
 require (
 	GoGitIt/internal/auth v0.0.0-00010101000000-000000000000
+	GoGitIt/internal/repos v0.0.0-00010101000000-000000000000
 	GoGitIt/pkg/utils v0.0.0-00010101000000-000000000000
 	gopkg.in/yaml.v2 v2.4.0
 )

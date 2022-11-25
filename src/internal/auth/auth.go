@@ -6,6 +6,7 @@ import (
 )
 
 var AuthToken string
+var Username string
 
 func PrintAuthorizedText() {
 	fmt.Println("You are currently authorized as " + Utils.GetEnvWithKey("GH_USER"))
@@ -23,9 +24,16 @@ func PrintUnauthorizedText() {
 
 func GetAuthToken() string {
 	getToken := Utils.GetEnvWithKey("GH_TOKEN")
-	AuthToken := getToken
+	AuthToken = getToken
 
 	return AuthToken
+}
+
+func GetUsername() string {
+	getUsername := Utils.GetEnvWithKey("GH_USER")
+	Username = getUsername
+
+	return Username
 }
 
 func CheckAuthToken() bool {

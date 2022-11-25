@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	Auth "GoGitIt/internal/auth"
+	Repos "GoGitIt/internal/repos"
 	Utils "GoGitIt/pkg/utils"
 )
 
@@ -199,6 +200,11 @@ func parseArgs(args []string) (Config, error) {
 		c.updateEnvLocation(envFileLocation)
 		c.updateAuthState(result.IsAuthorized)
 		saveConfig(c, homeDir+"/.ggiconfig.yml")
+	}
+
+	//Allow for users to pull a list of repos for a user
+	if args[0] == "-r" {
+		Repos.GetRepos()
 	}
 
 	return c, nil
