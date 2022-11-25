@@ -25,7 +25,7 @@ func (conf *Config) updateEnvLocation(filepath string) {
 	conf.EnvLocation = filepath
 }
 
-// Function to save the config struct to a yaml file that will be housed
+// Function to save the config struct to a yml file that will be housed
 // in the $HOME directory
 func saveConfig(c Config, filename string) error {
 	bytes, err := yaml.Marshal(c)
@@ -36,7 +36,7 @@ func saveConfig(c Config, filename string) error {
 	return os.WriteFile(filename, bytes, 0644)
 }
 
-// Function to load the config struct from a yaml file and check if
+// Function to load the config struct from a yml file and check if
 // authorized is set to true and that there is a token in the .env file
 func loadConfig(filename string) (Config, error) {
 	bytes, err := os.ReadFile(filename)
@@ -56,10 +56,10 @@ func loadConfig(filename string) (Config, error) {
 // Function to check if the env filepath is set
 func checkEnvLocation() string {
 	homeDir, _ := os.UserHomeDir()
-	result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+	result, err := loadConfig(homeDir + "/.ggiconfig.yml")
 
 	if err != nil {
-		fmt.Println("Error opening yaml config file. Run 'touch .ggiconfig.yaml' in your home directory")
+		fmt.Println("Error opening yml config file. Run 'touch .ggiconfig.yml' in your home directory")
 		os.Exit(1)
 	}
 
@@ -71,18 +71,18 @@ func checkEnvLocation() string {
 func checkAuthStatus() Config {
 	tokenCheck := Auth.CheckAuthToken()
 	homeDir, _ := os.UserHomeDir()
-	result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+	result, err := loadConfig(homeDir + "/.ggiconfig.yml")
 
 	if err != nil {
 		fmt.Println(err)
 	} else if err == nil && tokenCheck {
 		result.updateAuthState(true)
 		result.updateEnvLocation(result.EnvLocation)
-		saveConfig(result, homeDir+"/.ggiconfig.yaml")
+		saveConfig(result, homeDir+"/.ggiconfig.yml")
 	} else {
 		result.updateAuthState(false)
 		result.updateEnvLocation(result.EnvLocation)
-		saveConfig(result, homeDir+"/.ggiconfig.yaml")
+		saveConfig(result, homeDir+"/.ggiconfig.yml")
 	}
 
 	return result
@@ -110,7 +110,7 @@ func parseArgs(args []string) (Config, error) {
 		}
 		envFileLocation, _ := Utils.SetEnv(os.Stdin, os.Stdout)
 
-		result, _ := loadConfig(homeDir + "/.ggiconfig.yaml")
+		result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -118,7 +118,7 @@ func parseArgs(args []string) (Config, error) {
 		result.updateEnvLocation(envFileLocation)
 		result.updateAuthState(false)
 
-		saveConfig(result, homeDir+"/.ggiconfig.yaml")
+		saveConfig(result, homeDir+"/.ggiconfig.yml")
 
 		return c, nil
 	}
@@ -136,7 +136,16 @@ func parseArgs(args []string) (Config, error) {
 	//Authorize user
 	if args[0] == "-a" {
 		fmt.Println("Checking for token...")
+		homeDir, _ := os.UserHomeDir()
 		authToken := Auth.CheckAuthToken()
+
+		//TODO: Add logic to not authorize user if already authorized
+		result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
+
+		if result.IsAuthorized {
+			fmt.Println("You are already authorized! Cancelling operation!")
+			return result, nil
+		}
 
 		if !authToken {
 			fmt.Println("Authorization failed")
@@ -147,11 +156,11 @@ func parseArgs(args []string) (Config, error) {
 				return c, errors.New("could not find user home directory")
 			}
 
-			result, _ := loadConfig(homeDir + "/.ggiconfig.yaml")
+			result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
 
 			c.updateAuthState(true)
 			c.updateEnvLocation(result.EnvLocation)
-			saveConfig(c, homeDir+"/.ggiconfig.yaml")
+			saveConfig(c, homeDir+"/.ggiconfig.yml")
 			fmt.Println("Authorization successful!")
 		}
 
@@ -182,14 +191,14 @@ func parseArgs(args []string) (Config, error) {
 			return c, err
 		}
 
-		result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+		result, err := loadConfig(homeDir + "/.ggiconfig.yml")
 		if err != nil {
 			return result, err
 		}
 
 		c.updateEnvLocation(envFileLocation)
 		c.updateAuthState(result.IsAuthorized)
-		saveConfig(c, homeDir+"/.ggiconfig.yaml")
+		saveConfig(c, homeDir+"/.ggiconfig.yml")
 	}
 
 	return c, nil
@@ -208,10 +217,10 @@ func main() {
 	   		parseArgs(os.Args[1:])
 	   		os.Exit(1)
 	   	} */
-	result, err := loadConfig(homeDir + "/.ggiconfig.yaml")
+	result, err := loadConfig(homeDir + "/.ggiconfig.yml")
 
 	if err != nil {
-		fmt.Println("Error opening yaml config file. Run 'touch .ggiconfig.yaml' in your home directory")
+		fmt.Println("Error opening yml config file. Run 'touch .ggiconfig.yml' in your home directory")
 		os.Exit(1)
 	}
 
