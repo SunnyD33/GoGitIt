@@ -204,13 +204,25 @@ func parseArgs(args []string) (Config, error) {
 
 	//Allow for users to pull a list of repos for a user
 	if args[0] == "-r" {
-		Repos.GetRepos()
+		//Set a flag to check if args[1] is empty or not
+		var flag bool
+		if len(args) < 2 {
+			flag = true
+		} else {
+			flag = false
+		}
+
+		if flag {
+			Repos.GetRepos("")
+		} else {
+			Repos.GetRepos(args[1])
+		}
 	}
 
 	return c, nil
 }
 
-func runCmd(r io.Reader, w io.Writer, c Config) error {
+func runCmd(_ io.Reader, _ io.Writer, _ Config) error {
 	//TODO: To use for some commands that will require reading of inputs
 	fmt.Println("Command ran successfully") //Here to know that runCmd ran as expected
 	return nil
