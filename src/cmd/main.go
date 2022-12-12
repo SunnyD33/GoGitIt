@@ -1,9 +1,8 @@
 package main
 
 import (
-	"errors"
+	"flag"
 	"fmt"
-	"io"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -93,13 +92,11 @@ func checkAuthStatus() Config {
 func printHelpText() {
 	helpText := "Help text should print"
 	fmt.Println(helpText)
-	fmt.Println("")
 }
 
-func parseArgs(args []string) (Config, error) {
-	c := Config{}
+func main() {
+	var c Config
 
-	//Check for .env file when commands are run
 	loadErr := Utils.LoadEnv(checkEnvLocation())
 
 	if loadErr != nil {
@@ -107,7 +104,8 @@ func parseArgs(args []string) (Config, error) {
 		homeDir, err := os.UserHomeDir()
 
 		if err != nil {
-			return c, errors.New("could not find user home directory")
+			fmt.Println(err)
+			return
 		}
 		envFileLocation, _ := Utils.SetEnv(os.Stdin, os.Stdout)
 
@@ -121,21 +119,76 @@ func parseArgs(args []string) (Config, error) {
 
 		saveConfig(result, homeDir+"/.ggiconfig.yml")
 
-		return c, nil
+		return
 	}
 
-	if len(args) < 1 {
-		return c, errors.New("invalid number of arguments")
+	homeDir, _ := os.UserHomeDir()
+	_, err := loadConfig(homeDir + "/.ggiconfig.yml")
+
+	//This should not be reached.. Something is really wrong if this fires
+	if err != nil {
+		fmt.Println("Error opening yml config file. Run 'touch .ggiconfig.yml' in your home directory")
+		return
 	}
 
-	//Will print help text with tag options and how to use them
-	if args[0] == "-h" || args[0] == "--help" {
+	if len(os.Args) < 2 {
+		fmt.Println("Invalid number of arguments")
 		printHelpText()
-		return c, nil
+		return
 	}
 
-	//Authorize user
-	if args[0] == "-a" {
+	//Create commands for the user to use
+	helpCommand := flag.NewFlagSet("-h", flag.ExitOnError)
+	repoCommand := flag.NewFlagSet("-r", flag.ExitOnError)
+	statusCommand := flag.NewFlagSet("-s", flag.ExitOnError)
+	setEnvCommand := flag.NewFlagSet("--setenv", flag.ExitOnError)
+	authCommand := flag.NewFlagSet("-a", flag.ExitOnError)
+
+	switch os.Args[1] {
+	case "-h":
+		helpCommand.Parse(os.Args[2:])
+	case "-r":
+		repoCommand.Parse(os.Args[2:])
+	case "-s":
+		statusCommand.Parse(os.Args[2:])
+	case "-a":
+		authCommand.Parse(os.Args[2:])
+	case "--setenv":
+		setEnvCommand.Parse(os.Args[2:])
+	}
+
+	//Check which commands are parsed
+	if helpCommand.Parsed() {
+		if len(os.Args) > 2 {
+			fmt.Println("Too many arguments!")
+			printHelpText()
+		} else {
+			printHelpText()
+		}
+	}
+
+	if repoCommand.Parsed() {
+		if len(os.Args) < 3 {
+			Repos.GetRepos("")
+		} else {
+			Repos.GetRepos(os.Args[2])
+		}
+	}
+
+	if statusCommand.Parsed() {
+		if len(os.Args) > 2 {
+			fmt.Println("Too many arguments! Please enter only -s flag to get the current authorization status")
+		} else {
+			authStatus := checkAuthStatus()
+			if authStatus.IsAuthorized {
+				Auth.PrintAuthorizedText()
+			} else {
+				Auth.PrintUnauthorizedText()
+			}
+		}
+	}
+
+	if authCommand.Parsed() {
 		fmt.Println("Checking for token...")
 		homeDir, _ := os.UserHomeDir()
 		authToken := Auth.CheckAuthToken()
@@ -145,7 +198,7 @@ func parseArgs(args []string) (Config, error) {
 
 		if result.IsAuthorized {
 			fmt.Println("You are already authorized! Cancelling operation!")
-			return result, nil
+			return
 		}
 
 		if !authToken {
@@ -154,7 +207,8 @@ func parseArgs(args []string) (Config, error) {
 		} else {
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
-				return c, errors.New("could not find user home directory")
+				fmt.Println(err)
+				return
 			}
 
 			result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
@@ -164,95 +218,28 @@ func parseArgs(args []string) (Config, error) {
 			saveConfig(c, homeDir+"/.ggiconfig.yml")
 			fmt.Println("Authorization successful!")
 		}
-
-		return c, nil
 	}
 
-	//Checks the current authorization status of the current user
-	if args[0] == "--status" || args[0] == "-s" {
-		authStatus := checkAuthStatus()
-
-		if !authStatus.IsAuthorized {
-			Auth.PrintUnauthorizedText()
+	if setEnvCommand.Parsed() {
+		if len(os.Args) > 2 {
+			fmt.Println("Too many arguments! Please enter only --setenv flag to set a custom .env file location")
 		} else {
-			Auth.PrintAuthorizedText()
+			envFileLocation, err := Utils.SetEnv(os.Stdin, os.Stdout)
+
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			result, err := loadConfig(homeDir + "/.ggiconfig.yml")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			c.updateEnvLocation(envFileLocation)
+			c.updateAuthState(result.IsAuthorized)
+			saveConfig(c, homeDir+"/.ggiconfig.yml")
 		}
-	}
-
-	//Allow user to set a custom .env file location
-	if args[0] == "--setenv" {
-		homeDir, err := os.UserHomeDir()
-
-		if err != nil {
-			return c, errors.New("could not find user home directory")
-		}
-		envFileLocation, err := Utils.SetEnv(os.Stdin, os.Stdout)
-
-		if err != nil {
-			return c, err
-		}
-
-		result, err := loadConfig(homeDir + "/.ggiconfig.yml")
-		if err != nil {
-			return result, err
-		}
-
-		c.updateEnvLocation(envFileLocation)
-		c.updateAuthState(result.IsAuthorized)
-		saveConfig(c, homeDir+"/.ggiconfig.yml")
-	}
-
-	//Allow for users to pull a list of repos for a user
-	if args[0] == "-r" {
-		//Set a flag to check if args[1] is empty or not
-		var flag bool
-		if len(args) < 2 {
-			flag = true
-		} else {
-			flag = false
-		}
-
-		if flag {
-			Repos.GetRepos("")
-		} else {
-			Repos.GetRepos(args[1])
-		}
-	}
-
-	return c, nil
-}
-
-func runCmd(_ io.Reader, _ io.Writer, _ Config) error {
-	//TODO: To use for some commands that will require reading of inputs
-	fmt.Println("Command ran successfully") //Here to know that runCmd ran as expected
-	return nil
-}
-
-func main() {
-	homeDir, _ := os.UserHomeDir()
-	/* 	setCmd := os.Args[1]
-	   	if setCmd == "--setenv" {
-	   		parseArgs(os.Args[1:])
-	   		os.Exit(1)
-	   	} */
-	result, err := loadConfig(homeDir + "/.ggiconfig.yml")
-
-	if err != nil {
-		fmt.Println("Error opening yml config file. Run 'touch .ggiconfig.yml' in your home directory")
-		os.Exit(1)
-	}
-
-	Utils.LoadEnv(result.EnvLocation)
-
-	c, err := parseArgs(os.Args[1:])
-	if err != nil {
-		fmt.Fprintln(os.Stdout, err)
-		os.Exit(1)
-	}
-
-	err = runCmd(os.Stdin, os.Stdout, c)
-	if err != nil {
-		fmt.Fprintln(os.Stdout, err)
-		os.Exit(1)
 	}
 }

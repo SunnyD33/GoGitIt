@@ -11,7 +11,7 @@ import (
 
 // Create a struct to hold the repo data
 type Repos struct {
-	Name string `json:"full_name"`
+	Name    string `json:"full_name"`
 	Message string `json:"message"`
 }
 
@@ -57,8 +57,12 @@ func GetRepos(user string) {
 	err = json.Unmarshal(body, &repos)
 	if err != nil {
 		//user is not found
-		fmt.Println("User not found or user has no repos")
-		fmt.Println("Please check your spelling and try again")
+		fmt.Println(err)
+		return
+	}
+
+	if len(repos) == 0 {
+		fmt.Println("User " + "'" + username + "' not found")
 		return
 	}
 
