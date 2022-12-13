@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"gopkg.in/yaml.v2"
 
 	Auth "GoGitIt/internal/auth"
 	Repos "GoGitIt/internal/repos"
+	Search "GoGitIt/internal/search"
 	Utils "GoGitIt/pkg/utils"
 )
 
@@ -143,6 +145,14 @@ func main() {
 	statusCommand := flag.NewFlagSet("-s", flag.ExitOnError)
 	setEnvCommand := flag.NewFlagSet("--setenv", flag.ExitOnError)
 	authCommand := flag.NewFlagSet("-a", flag.ExitOnError)
+	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
+
+	//Create subcommands for the user to use on specific commands
+	searchQuery := searchCommand.String("q", "", "Used to search for repos that contain the given value (Required)")
+	searchLanguage := searchCommand.String("l", "", "Refine repo search by language")
+	searchSort := searchCommand.String("s", "stars", "Acceptable values: stars, forks, help-wanted-issues, updated")
+	searchOrder := searchCommand.String("o", "desc", "Acceptable values: desc, asc")
+	searchCount := searchCommand.Int("c", 30, "Sets how many results are displayed (Max = 100)")
 
 	switch os.Args[1] {
 	case "-h":
@@ -155,6 +165,8 @@ func main() {
 		authCommand.Parse(os.Args[2:])
 	case "--setenv":
 		setEnvCommand.Parse(os.Args[2:])
+	case "search":
+		searchCommand.Parse(os.Args[2:])
 	}
 
 	//Check which commands are parsed
@@ -241,5 +253,56 @@ func main() {
 			c.updateAuthState(result.IsAuthorized)
 			saveConfig(c, homeDir+"/.ggiconfig.yml")
 		}
+	}
+
+	if searchCommand.Parsed() {
+		sortChoices := [4]string{"stars", "forks", "help-wanted-issues", "updated"}
+		orderByChoice := [2]string{"desc", "asc"}
+
+		//Query is required
+		if *searchQuery == "" {
+			searchCommand.PrintDefaults()
+			return
+		}
+
+		//Check to make sure that the sort option is valid
+		i := 0 //Counting variabls in array
+		for _, choice := range sortChoices {
+			if *searchSort != choice && i < len(sortChoices)-1 {
+				i++
+				continue
+			} else if *searchSort == choice {
+				break
+			} else {
+				searchCommand.PrintDefaults()
+				return
+			}
+		}
+
+		//Check to make sure that the order option is valid
+		i = 0 //Counting variabls in array
+		for _, choice := range orderByChoice {
+			if *searchOrder != choice && i < len(orderByChoice)-1 {
+				i++
+				continue
+			} else if *searchOrder == choice {
+				break
+			} else {
+				searchCommand.PrintDefaults()
+				return
+			}
+		}
+
+		//Check value of count. If not set, use default value of 30
+		if *searchCount != 30 {
+			if *searchCount <= 0 || *searchCount > 100 {
+				searchCommand.PrintDefaults()
+				return
+			}
+		}
+
+		countString := strconv.Itoa(*searchCount)
+
+		Search.Search(*searchQuery, *searchLanguage, *searchSort, *searchOrder, countString)
 	}
 }
