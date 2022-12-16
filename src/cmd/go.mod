@@ -10,8 +10,11 @@ replace GoGitIt/internal/repos => ../internal/repos
 
 replace GoGitIt/internal/search => ../internal/search
 
+replace GoGitIt/internal/rate => ../internal/rate
+
 require (
 	GoGitIt/internal/auth v0.0.0-00010101000000-000000000000
+	GoGitIt/internal/rate v0.0.0-00010101000000-000000000000
 	GoGitIt/internal/repos v0.0.0-00010101000000-000000000000
 	GoGitIt/internal/search v0.0.0-00010101000000-000000000000
 	GoGitIt/pkg/utils v0.0.0-00010101000000-000000000000

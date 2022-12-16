@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	Auth "GoGitIt/internal/auth"
+	Rate "GoGitIt/internal/rate"
 	Repos "GoGitIt/internal/repos"
 	Search "GoGitIt/internal/search"
 	Utils "GoGitIt/pkg/utils"
@@ -146,6 +147,7 @@ func main() {
 	setEnvCommand := flag.NewFlagSet("--setenv", flag.ExitOnError)
 	authCommand := flag.NewFlagSet("-a", flag.ExitOnError)
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
+	rateCommand := flag.NewFlagSet("rate", flag.ExitOnError)
 
 	//Create subcommands for the user to use on specific commands
 	searchQuery := searchCommand.String("q", "", "Used to search for repos that contain the given value (Required)")
@@ -167,6 +169,8 @@ func main() {
 		setEnvCommand.Parse(os.Args[2:])
 	case "search":
 		searchCommand.Parse(os.Args[2:])
+	case "rate":
+		rateCommand.Parse(os.Args[2:])
 	}
 
 	//Check which commands are parsed
@@ -304,5 +308,14 @@ func main() {
 		countString := strconv.Itoa(*searchCount)
 
 		Search.Search(*searchQuery, *searchLanguage, *searchSort, *searchOrder, countString)
+	}
+
+	if rateCommand.Parsed() {
+		if len(os.Args) > 3 {
+			fmt.Println("Too many arguments")
+			rateCommand.PrintDefaults()
+		} else {
+			Rate.GetRate()
+		}
 	}
 }
