@@ -158,6 +158,9 @@ func main() {
 	searchOrder := searchCommand.String("o", "desc", "Acceptable values: desc, asc")
 	searchCount := searchCommand.Int("c", 30, "Sets how many results are displayed (Max = 100)")
 
+	// openPulls := openCommand.String("p","-p","Opens pull request for entered repo via your browser")
+	// openIssues := openCommand.String("i","-i", "Opens issue for entered repo via your browser")
+
 	switch os.Args[1] {
 	case "-h":
 		helpCommand.Parse(os.Args[2:])
@@ -244,9 +247,18 @@ func main() {
 		if len(os.Args) < 3 {
 			fmt.Println("Please enter a user or repo to open on your broswer")
 			fmt.Println("Path can either be just a username or a username/repo")
+			openCommand.PrintDefaults()
 			return
+		} else if len(os.Args) == 3 {
+			Open.OpenRepo(os.Args[2], "none")
+		} else if len(os.Args) > 3 {
+			fmt.Println("Too many arguments! Can either use only -i or -p as subcommands for -o")
+		} else if os.Args[2] != "" && os.Args[3] == "-i" {
+			Open.OpenRepo(os.Args[2], "issues")
+		} else if os.Args[2] != "" && os.Args[3] == "-p" {
+			Open.OpenRepo(os.Args[2], "pulls")
 		} else {
-			Open.OpenRepo(os.Args[2])
+			fmt.Println("Please enter a user or repo to open on your broswer")
 		}
 	}
 
