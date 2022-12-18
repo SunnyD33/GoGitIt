@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	Auth "GoGitIt/internal/auth"
+	Open "GoGitIt/internal/open"
 	Rate "GoGitIt/internal/rate"
 	Repos "GoGitIt/internal/repos"
 	Search "GoGitIt/internal/search"
@@ -148,6 +149,7 @@ func main() {
 	authCommand := flag.NewFlagSet("-a", flag.ExitOnError)
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	rateCommand := flag.NewFlagSet("rate", flag.ExitOnError)
+	openCommand := flag.NewFlagSet("-o", flag.ExitOnError)
 
 	//Create subcommands for the user to use on specific commands
 	searchQuery := searchCommand.String("q", "", "Used to search for repos that contain the given value (Required)")
@@ -165,6 +167,8 @@ func main() {
 		statusCommand.Parse(os.Args[2:])
 	case "-a":
 		authCommand.Parse(os.Args[2:])
+	case "-o":
+		openCommand.Parse(os.Args[2:])
 	case "--setenv":
 		setEnvCommand.Parse(os.Args[2:])
 	case "search":
@@ -233,6 +237,16 @@ func main() {
 			c.updateEnvLocation(result.EnvLocation)
 			saveConfig(c, homeDir+"/.ggiconfig.yml")
 			fmt.Println("Authorization successful!")
+		}
+	}
+
+	if openCommand.Parsed() {
+		if len(os.Args) < 3 {
+			fmt.Println("Please enter a user or repo to open on your broswer")
+			fmt.Println("Path can either be just a username or a username/repo")
+			return
+		} else {
+			Open.OpenRepo(os.Args[2])
 		}
 	}
 

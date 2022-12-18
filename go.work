@@ -1,7 +1,13 @@
 go 1.19
 
+//MUST put modules here to be able to have autocomplete work as expected
+
 use (
     ./src/cmd
     ./src/pkg/utils
     ./src/internal/auth
+    ./src/internal/open
+    ./src/internal/rate
+    ./src/internal/search
+    ./src/internal/repos
 )
