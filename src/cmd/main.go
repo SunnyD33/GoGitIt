@@ -251,7 +251,7 @@ func main() {
 			return
 		} else if len(os.Args) == 3 {
 			Open.OpenRepo(os.Args[2], "none")
-		} else if len(os.Args) > 3 {
+		} else if len(os.Args) > 4 {
 			fmt.Println("Too many arguments! Can either use only -i or -p as subcommands for -o")
 		} else if os.Args[2] != "" && os.Args[3] == "-i" {
 			Open.OpenRepo(os.Args[2], "issues")
