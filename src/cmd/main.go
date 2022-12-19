@@ -178,6 +178,9 @@ func main() {
 		searchCommand.Parse(os.Args[2:])
 	case "rate":
 		rateCommand.Parse(os.Args[2:])
+	default:
+		fmt.Println("Invalid command")
+		printHelpText()
 	}
 
 	//Check which commands are parsed
