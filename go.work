@@ -10,4 +10,5 @@ use (
     ./src/internal/rate
     ./src/internal/search
     ./src/internal/repos
+    ./src/internal/help
 )

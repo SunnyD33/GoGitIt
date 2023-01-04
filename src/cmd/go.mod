@@ -14,6 +14,8 @@ replace GoGitIt/internal/rate => ../internal/rate
 
 replace GoItIt/internal/open => ../internal/open
 
+replace GoItIt/internal/help => ../internal/help
+
 require (
 	GoGitIt/internal/auth v0.0.0-00010101000000-000000000000
 	GoGitIt/internal/rate v0.0.0-00010101000000-000000000000

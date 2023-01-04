@@ -14,6 +14,7 @@ import (
 	Repos "GoGitIt/internal/repos"
 	Search "GoGitIt/internal/search"
 	Utils "GoGitIt/pkg/utils"
+    Help "GoGitIt/internal/help"
 )
 
 type Config struct {
@@ -137,7 +138,7 @@ func main() {
 
 	if len(os.Args) < 2 {
 		fmt.Println("Invalid number of arguments")
-		printHelpText()
+        Help.HelpCommand()
 		return
 	}
 
@@ -152,18 +153,20 @@ func main() {
 	openCommand := flag.NewFlagSet("-o", flag.ExitOnError)
 
 	//Create subcommands for the user to use on specific commands
-	searchQuery := searchCommand.String("q", "", "Used to search for repos that contain the given value (Required)")
-	searchLanguage := searchCommand.String("l", "", "Refine repo search by language")
-	searchSort := searchCommand.String("s", "stars", "Acceptable values: stars, forks, help-wanted-issues, updated")
-	searchOrder := searchCommand.String("o", "desc", "Acceptable values: desc, asc")
+	searchQuery := searchCommand.String("q", "", "Query value used to search for repos that contain the given value (Required)")
+	searchLanguage := searchCommand.String("l", "", "Refine repo search by programming language")
+	searchSort := searchCommand.String("s", "stars", "Sorting Option - Acceptable values: stars, forks, help-wanted-issues, updated")
+	searchOrder := searchCommand.String("o", "desc", "Ordering Option - Acceptable values: desc, asc")
 	searchCount := searchCommand.Int("c", 30, "Sets how many results are displayed (Max = 100)")
 
-	// openPulls := openCommand.String("p","-p","Opens pull request for entered repo via your browser")
-	// openIssues := openCommand.String("i","-i", "Opens issue for entered repo via your browser")
+    // openPulls := openCommand.String("p","-p","Opens pull request for entered repo via your browser")
+    // openIssues := openCommand.String("i","-i", "Opens issue for entered repo via your browser")
 
 	switch os.Args[1] {
 	case "-h":
 		helpCommand.Parse(os.Args[2:])
+    case "--help":
+        helpCommand.Parse(os.Args[2:])
 	case "-r":
 		repoCommand.Parse(os.Args[2:])
 	case "-s":
@@ -177,19 +180,19 @@ func main() {
 	case "search":
 		searchCommand.Parse(os.Args[2:])
 	case "rate":
-		rateCommand.Parse(os.Args[2:])
-	default:
-		fmt.Println("Invalid command")
-		printHelpText()
+        rateCommand.Parse(os.Args[2:])
+    default:
+        fmt.Println("Invalid command")
+        Help.HelpCommand()
 	}
 
 	//Check which commands are parsed
 	if helpCommand.Parsed() {
 		if len(os.Args) > 2 {
 			fmt.Println("Too many arguments!")
-			printHelpText()
+		    Help.HelpCommand()	
 		} else {
-			printHelpText()
+			Help.HelpCommand()
 		}
 	}
 
