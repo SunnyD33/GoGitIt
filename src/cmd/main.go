@@ -132,7 +132,7 @@ func main() {
 
 	//This should not be reached.. Something is really wrong if this fires
 	if err != nil {
-		fmt.Println("Error opening yml config file. Run 'touch .ggiconfig.yml' in your home directory")
+		fmt.Println("How did I get here?!?!")
 		return
 	}
 
@@ -144,39 +144,41 @@ func main() {
 
 	//Create commands for the user to use
 	helpCommand := flag.NewFlagSet("-h", flag.ExitOnError)
-	repoCommand := flag.NewFlagSet("-r", flag.ExitOnError)
-	statusCommand := flag.NewFlagSet("-s", flag.ExitOnError)
-	setEnvCommand := flag.NewFlagSet("--setenv", flag.ExitOnError)
-	authCommand := flag.NewFlagSet("-a", flag.ExitOnError)
+    listCommand := flag.NewFlagSet("list", flag.ExitOnError)
+	setupCommand := flag.NewFlagSet("setup",flag.ExitOnError)
 	searchCommand := flag.NewFlagSet("search", flag.ExitOnError)
 	rateCommand := flag.NewFlagSet("rate", flag.ExitOnError)
-	openCommand := flag.NewFlagSet("-o", flag.ExitOnError)
+	openCommand := flag.NewFlagSet("open", flag.ExitOnError)
 
 	//Create subcommands for the user to use on specific commands
-	searchQuery := searchCommand.String("q", "", "Query value used to search for repos that contain the given value (Required)")
-	searchLanguage := searchCommand.String("l", "", "Refine repo search by programming language")
-	searchSort := searchCommand.String("s", "stars", "Sorting Option - Acceptable values: stars, forks, help-wanted-issues, updated")
-	searchOrder := searchCommand.String("o", "desc", "Ordering Option - Acceptable values: desc, asc")
-	searchCount := searchCommand.Int("c", 30, "Sets how many results are displayed (Max = 100)")
+	repoCommand := listCommand.Bool("r",false,"Lists repos for the username that is entered \n ggi list -r <username>")
+    setupAuthCommand := setupCommand.Bool("a",false,"Authorize user \n ggi setup [-a]")
+    setupStatusCommand := setupCommand.Bool("s",false,"Check current auth status \n ggi setup [-s]")
+    setupEnvCommand := setupCommand.Bool("setenv", false, "Set your .env file location \n ggi setup [-setenv]")
+    openIssues := openCommand.Bool("i", false, "Opens github repo on Issues page \n ggi open <username/repo name> [i]")
+    openPulls := openCommand.Bool("p", false, "Opens github repo on Pull Requests page \n ggi open <username/repo name> [p]")
+	searchQuery := searchCommand.String("q", "", "query value used to search for repos that contain the given value (required)")
+	searchLanguage := searchCommand.String("l", "", "refine repo search by programming language")
+	searchSort := searchCommand.String("s", "stars", "sorting option - acceptable values: stars, forks, help-wanted-issues, updated")
+	searchOrder := searchCommand.String("o", "desc", "ordering option - acceptable values: desc, asc")
+	searchCount := searchCommand.Int("c", 30, "sets how many results are displayed (max = 100)")
 
-    // openPulls := openCommand.String("p","-p","Opens pull request for entered repo via your browser")
-    // openIssues := openCommand.String("i","-i", "Opens issue for entered repo via your browser")
+    //Don't like this BUT I need the help text..need to rework but it does the job for now..
+    *openPulls = false
+    *openIssues = false
+
 
 	switch os.Args[1] {
 	case "-h":
 		helpCommand.Parse(os.Args[2:])
     case "--help":
         helpCommand.Parse(os.Args[2:])
-	case "-r":
-		repoCommand.Parse(os.Args[2:])
-	case "-s":
-		statusCommand.Parse(os.Args[2:])
-	case "-a":
-		authCommand.Parse(os.Args[2:])
-	case "-o":
+    case "list":
+        listCommand.Parse(os.Args[2:])
+	case "setup":
+		setupCommand.Parse(os.Args[2:])
+	case "open":
 		openCommand.Parse(os.Args[2:])
-	case "--setenv":
-		setEnvCommand.Parse(os.Args[2:])
 	case "search":
 		searchCommand.Parse(os.Args[2:])
 	case "rate":
@@ -196,34 +198,32 @@ func main() {
 		}
 	}
 
-	if repoCommand.Parsed() {
-		if len(os.Args) < 3 {
+	if listCommand.Parsed() {
+		if !*repoCommand {
 			Repos.GetRepos("")
 		} else {
-			Repos.GetRepos(os.Args[2])
+			Repos.GetRepos(os.Args[3])
 		}
 	}
 
-	if statusCommand.Parsed() {
-		if len(os.Args) > 2 {
-			fmt.Println("Too many arguments! Please enter only -s flag to get the current authorization status")
-		} else {
-			authStatus := checkAuthStatus()
-			if authStatus.IsAuthorized {
-				Auth.PrintAuthorizedText()
-			} else {
-				Auth.PrintUnauthorizedText()
-			}
-		}
-	}
+    if setupCommand.Parsed() {
+        if len(os.Args) > 3 {
+            fmt.Println("Too many arguments!")
+            setupCommand.PrintDefaults()
+        } else if *setupStatusCommand {
+            authStatus := checkAuthStatus()
+            if authStatus.IsAuthorized {
+                Auth.PrintAuthorizedText()
+            } else {
+                Auth.PrintUnauthorizedText()
+            }
+        } else if *setupAuthCommand {
+            fmt.Println("Checking for token...")
+            homeDir, _ := os.UserHomeDir()
+            authToken := Auth.CheckAuthToken()
 
-	if authCommand.Parsed() {
-		fmt.Println("Checking for token...")
-		homeDir, _ := os.UserHomeDir()
-		authToken := Auth.CheckAuthToken()
-
-		//TODO: Add logic to not authorize user if already authorized
-		result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
+            //TODO: Add logic to not authorize user if already authorized
+            result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
 
 		if result.IsAuthorized {
 			fmt.Println("You are already authorized! Cancelling operation!")
@@ -242,37 +242,13 @@ func main() {
 
 			result, _ := loadConfig(homeDir + "/.ggiconfig.yml")
 
-			c.updateAuthState(true)
-			c.updateEnvLocation(result.EnvLocation)
-			saveConfig(c, homeDir+"/.ggiconfig.yml")
-			fmt.Println("Authorization successful!")
-		}
-	}
-
-	if openCommand.Parsed() {
-		if len(os.Args) < 3 {
-			fmt.Println("Please enter a user or repo to open on your broswer")
-			fmt.Println("Path can either be just a username or a username/repo")
-			openCommand.PrintDefaults()
-			return
-		} else if len(os.Args) == 3 {
-			Open.OpenRepo(os.Args[2], "none")
-		} else if len(os.Args) > 4 {
-			fmt.Println("Too many arguments! Can either use only -i or -p as subcommands for -o")
-		} else if os.Args[2] != "" && os.Args[3] == "-i" {
-			Open.OpenRepo(os.Args[2], "issues")
-		} else if os.Args[2] != "" && os.Args[3] == "-p" {
-			Open.OpenRepo(os.Args[2], "pulls")
-		} else {
-			fmt.Println("Please enter a user or repo to open on your broswer")
-		}
-	}
-
-	if setEnvCommand.Parsed() {
-		if len(os.Args) > 2 {
-			fmt.Println("Too many arguments! Please enter only --setenv flag to set a custom .env file location")
-		} else {
-			envFileLocation, err := Utils.SetEnv(os.Stdin, os.Stdout)
+            c.updateAuthState(true)
+            c.updateEnvLocation(result.EnvLocation)
+            saveConfig(c, homeDir+"/.ggiconfig.yml")
+            fmt.Println("Authorization successful!")
+        }
+    } else if *setupEnvCommand {
+        envFileLocation, err := Utils.SetEnv(os.Stdin, os.Stdout)
 
 			if err != nil {
 				fmt.Println(err)
@@ -285,11 +261,32 @@ func main() {
 				return
 			}
 
-			c.updateEnvLocation(envFileLocation)
-			c.updateAuthState(result.IsAuthorized)
-			saveConfig(c, homeDir+"/.ggiconfig.yml")
+            c.updateEnvLocation(envFileLocation)
+            c.updateAuthState(result.IsAuthorized)
+            saveConfig(c, homeDir+"/.ggiconfig.yml")
+        }
+    }
+
+
+	if openCommand.Parsed() {
+		if len(os.Args) < 3 {
+			fmt.Println("Please enter a user or repo to open on your broswer")
+			fmt.Println("Path can either be just a username or a username/repo")
+			openCommand.PrintDefaults()
+			return
+		} else if len(os.Args) == 3 {
+			Open.OpenRepo(os.Args[2], "none")
+		} else if len(os.Args) > 4 {
+			fmt.Println("Too many arguments! Can either use only -i or -p as subcommands for -o")
+		} else if os.Args[2] != "" && os.Args[3] == "-i"  {
+			Open.OpenRepo(os.Args[2], "issues")
+		} else if os.Args[2] != "" && os.Args[3] == "-p" {
+			Open.OpenRepo(os.Args[2], "pulls")
+		} else {
+			fmt.Println("Please enter a user or repo to open on your broswer")
 		}
 	}
+
 
 	if searchCommand.Parsed() {
 		sortChoices := [4]string{"stars", "forks", "help-wanted-issues", "updated"}
