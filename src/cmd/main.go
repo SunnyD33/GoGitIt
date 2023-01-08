@@ -93,12 +93,6 @@ func checkAuthStatus() Config {
 	return result
 }
 
-// To be re-worked and potentially moved into it's own go file
-func printHelpText() {
-	helpText := "Help text should print"
-	fmt.Println(helpText)
-}
-
 func main() {
 	var c Config
 
