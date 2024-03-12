@@ -70,4 +70,4 @@ Subcommands are also available for some of the commands. These will be listed be
   ```
   ## Notes
   - In case the ggi command does not work, and you have it in your usr/local/bin directory, you made need to run the chmod command on the file to give it permissions to run as an executable.
-  - The program does not keep track of your token if it is expired. In case commands, return an unmarshal error, please check that the token that you are using is not expired.
+  - The program does not keep track of your token if it is expired. In case commands return an unmarshal error please check that the token that you are using is not expired.
